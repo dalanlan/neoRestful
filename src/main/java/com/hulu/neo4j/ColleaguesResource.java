@@ -36,10 +36,28 @@ public class ColleaguesResource {
         this.graphDb = graphDb;
         this.objectMapper = new ObjectMapper();
     }
+    private class ValueComparator implements Comparator<Node> {
+        Map<Node, Integer> base;
+
+        public ValueComparator(Map<Node, Integer> base) {
+            this.base = base;
+        }
+
+        // Note: this comparator imposes orderings that are inconsistent with
+        // equals.
+        public int compare(Node a, Node b) {
+            if (base.get(a) >= base.get(b)) {
+                return -1;
+            } else {
+                return 1;
+            } // returning 0 would merge keys
+        }
+    }
 
     @GET
     @Path("/{actorName}")
-    public Response findColleagues(final @PathParam("actorName") String actorName, final @QueryParam("limit") Integer limit) {
+    public Response findColleagues(final @PathParam("actorName") String actorName,
+                                   @DefaultValue("10000000")@QueryParam("limit") Integer limit) {
         StreamingOutput stream = new StreamingOutput() {
             @Override
             public void write(OutputStream outputStream) throws IOException, WebApplicationException {
@@ -74,14 +92,14 @@ public class ColleaguesResource {
                     TreeMap<Node, Integer> sorted_map = new TreeMap<>(bvc);
                     sorted_map.putAll(nodeMap);
 
-                    int realLimit = limit == null ? Integer.MAX_VALUE : limit;
+
                     int cnt = 0;
                     jg.writeFieldName("colleagues");
                     jg.writeStartArray();
                     for(Map.Entry<Node, Integer> entry : sorted_map.entrySet()) {
                         jg.writeString(entry.getKey().getProperties("name").toString());
                         cnt++;
-                        if(cnt == realLimit) {
+                        if(cnt == limit) {
                             break;
                         }
                     }
@@ -104,20 +122,3 @@ public class ColleaguesResource {
 }
 
 
-class ValueComparator implements Comparator<Node> {
-    Map<Node, Integer> base;
-
-    public ValueComparator(Map<Node, Integer> base) {
-        this.base = base;
-    }
-
-    // Note: this comparator imposes orderings that are inconsistent with
-    // equals.
-    public int compare(Node a, Node b) {
-        if (base.get(a) >= base.get(b)) {
-            return -1;
-        } else {
-            return 1;
-        } // returning 0 would merge keys
-    }
-}

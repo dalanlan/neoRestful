@@ -1,2 +1,4 @@
+.*
 target/*
+neoRestful.iml
 .idea/*

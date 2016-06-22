@@ -1,16 +1,10 @@
 package com.hulu.neo4j;
 
-import org.apache.lucene.search.Weight;
-import org.codehaus.jackson.JsonNode;
-import org.codehaus.jackson.map.annotate.JsonSerialize;
-import org.neo4j.graphdb.Node;
+
+import com.hulu.neo4j.util.RenderUtil;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphalgo.WeightedPath;
 
-
-import java.util.LinkedList;
-import java.util.List;
 
 /**
  * Created by simei.he on 6/14/16.
@@ -50,7 +44,7 @@ public class WeightedPathImpl {
     public String render() {
         StringBuilder result = new StringBuilder();
         result.append(prop + ":" + weight+ ",");
-        result.append(PathResource.render(this.path));
+        result.append(RenderUtil.render(this.path));
         return result.toString();
     }
 

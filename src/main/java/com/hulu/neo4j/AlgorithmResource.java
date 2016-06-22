@@ -1,5 +1,6 @@
 package com.hulu.neo4j;
 
+import com.hulu.neo4j.util.RenderUtil;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.neo4j.graphalgo.*;
 import org.neo4j.graphdb.*;
@@ -51,7 +52,7 @@ public class AlgorithmResource {
             System.out.println(path.weight());
 
             if (path != null) {
-                result.add(PathResource.render(path));
+                result.add(RenderUtil.render(path));
             }
             tx.success();
         } catch (NullPointerException | MultipleFoundException e) {
@@ -79,7 +80,7 @@ public class AlgorithmResource {
             WeightedPath path = dijk.findSinglePath(startNode, endNode);
             System.out.println(path.weight());
             if (path != null) {
-                result.add(PathResource.render(path));
+                result.add(RenderUtil.render(path));
             }
             tx.success();
         } catch (NullPointerException | MultipleFoundException e) {

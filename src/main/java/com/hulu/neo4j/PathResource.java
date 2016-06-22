@@ -1,14 +1,10 @@
 package com.hulu.neo4j;
 
+import com.hulu.neo4j.util.RenderUtil;
 import org.codehaus.jackson.map.ObjectMapper;
-import org.neo4j.graphalgo.CostEvaluator;
 import org.neo4j.graphalgo.GraphAlgoFactory;
 import org.neo4j.graphalgo.PathFinder;
-import org.neo4j.graphalgo.WeightedPath;
 import org.neo4j.graphdb.*;
-import org.neo4j.graphdb.Path;
-import org.neo4j.helpers.collection.Iterables;
-
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
@@ -17,7 +13,6 @@ import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.util.*;
 
-import com.google.gson.*;
 /**
  * Created by simei.he on 6/14/16.
  */
@@ -26,13 +21,7 @@ import com.google.gson.*;
 public class PathResource {
     private final GraphDatabaseService graphDb;
     private final ObjectMapper objectMapper;
-
-    private static final RelationshipType ACTED_IN = RelationshipType.withName("ACTED_IN");
-
-    private static final Label ACTOR = Label.label("Actor");
     private static final Label MOVIE = Label.label("Movie");
-
-//    private final Map properties = new HashMap<>();
 
 
     public PathResource(@Context GraphDatabaseService graphDb) {
@@ -50,9 +39,7 @@ public class PathResource {
             @DefaultValue("10000000")@QueryParam("limit") Integer limit,
             @DefaultValue("false")@QueryParam("simple") boolean simple,
             @DefaultValue("false")@QueryParam("sort") boolean sort) throws IOException {
-        //List<org.neo4j.graphdb.Path> result = new LinkedList<>();
-//        Gson gson = new Gson();
-//        Gson gson = new GsonBuilder().serializeNulls().create();
+
         List<String> resp = new LinkedList<>();
         List<WeightedPathImpl> weightedPaths = new LinkedList<>();
         try (Transaction tx = graphDb.beginTx()) {
@@ -67,16 +54,6 @@ public class PathResource {
                 weightedPaths.add(new WeightedPathImpl(p, "weight"));
             }
             Collections.sort(weightedPaths, comparator);
-//            int ctt = 0;
-//            for (WeightedPathImpl wp : weightedPaths) {
-//                System.out.println(wp.getPath().toString());
-//                System.out.println(wp.getWeight());
-//                if (ctt > 5) {
-//                    break;
-//                }
-//                ctt++;
-//            }
-            // result.addAll(Iterables.asList(finder.findAllPaths(startNode, endNode)));
 
             int cnt = 0;
 
@@ -86,7 +63,7 @@ public class PathResource {
                     if (simple) {
                         resp.add(p.toString());
                     } else {
-                        resp.add(render(p));
+                        resp.add(RenderUtil.render(p));
                     }
                     cnt++;
                     if (cnt >= limit) {
@@ -116,11 +93,7 @@ public class PathResource {
 //            e.printStackTrace();
         }
         return Response.ok().entity(objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(resp)).build();
-        // This works, yet super ugly
-//        return Response.ok(gson.toJson(resp), MediaType.APPLICATION_JSON).build();
 
-        // return Response.ok().entity(resp).type(MediaType.APPLICATION_JSON).build();
-        // return Response.ok(gson.toJson(result)).build();
     }
     private Comparator<WeightedPathImpl> comparator = new Comparator<WeightedPathImpl>() {
         @Override
@@ -142,11 +115,9 @@ public class PathResource {
     public Response findSinglePath(
             final @PathParam("movie1") String movie1,
             final @PathParam("movie2") String movie2,
-            @QueryParam("depth") Integer depth) throws IOException {
+            @DefaultValue("3")@QueryParam("depth") Integer depth) throws IOException {
 
         List<String> resp = new LinkedList<>();
-        depth = depth == null ? 3 : depth;
-        // Gson gson = new Gson();
 
         try (Transaction tx = graphDb.beginTx()) {
             Node startNode = graphDb.findNode(MOVIE, "TMSId", movie1);
@@ -156,12 +127,8 @@ public class PathResource {
             org.neo4j.graphdb.Path path = finder.findSinglePath(startNode, endNode);
 
 
-            // result.addAll(Iterables.asList(finder.findAllPaths(startNode, endNode)));
-
-            // resp.add(render(path, "TMSId"));
             if(path!= null) {
-                //resp.add(path.toString());
-                resp.add(render(path));
+                resp.add(RenderUtil.render(path));
             }
             tx.success();
         } catch (NullPointerException | MultipleFoundException e) {
@@ -170,49 +137,8 @@ public class PathResource {
         }
         return Response.ok().entity(objectMapper.writeValueAsString(resp)).build();
 
-        // return Response.ok().entity(resp).type(MediaType.APPLICATION_JSON).build();
-        // return Response.ok(gson.toJson(result)).build();
     }
 
 
-    //
-    public static String toString(Node n) {
-        StringBuilder result = new StringBuilder();
 
-        result.append("("+n.getId()+":");
-        if(n.getLabels() != null) {
-            for(Label l : n.getLabels()) {
-                result.append(l.name());
-                result.append(",");
-            }
-        }
-        if(n.getAllProperties() != null) {
-            result.append(n.getAllProperties());
-        }
-        result.append(")");
-        return result.toString();
-    }
-
-    // mind the relationship direction
-    public static String toString(Relationship r) {
-        StringBuilder result = new StringBuilder();
-        result.append("-[" + r.getId() + ":" + r.getType());
-//        if(r.getAllProperties() != null) {
-//            result.append(r.getAllProperties());
-//        }
-        result.append("]-");
-        return result.toString();
-    }
-
-    public static String render(org.neo4j.graphdb.Path path) {
-        StringBuilder result = new StringBuilder();
-        for (PropertyContainer pc : path) {
-            if (pc instanceof Node) {
-                result.append(toString((Node) pc));
-            } else {
-                result.append(toString((Relationship) pc));
-            }
-        }
-        return result.toString();
-    }
 }
